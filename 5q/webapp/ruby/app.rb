@@ -306,8 +306,7 @@ SQL
     comments_for_me = db.xquery(comments_for_me_query, current_user[:id])
 
     entries_of_friends = []
-    db.query('SELECT id,user_id,private,title,created_at FROM entries ORDER BY created_at DESC LIMIT 1000').each do |entry|
-      next unless is_friend?(entry[:user_id]) # TODO
+    db.xquery('SELECT id,user_id,private,title,created_at FROM entries WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 10', current_friends.keys).each do |entry|
       entries_of_friends << entry
       break if entries_of_friends.size >= 10
     end
@@ -409,7 +408,7 @@ SQL
   post '/diary/entry' do
     authenticated!
     query = 'INSERT INTO entries (user_id, private, title, body) VALUES (?,?,?,?)'
-    title = (params['title'] || "タイトルなし") 
+    title = (params['title'] || "タイトルなし")
     body = params['content']
     db.xquery(query, current_user[:id], (params['private'] ? '1' : '0'), title, body)
     redirect "/diary/entries/#{current_user[:account_name]}"
