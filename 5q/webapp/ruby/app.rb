@@ -99,16 +99,19 @@ class Isucon5::WebApp < Sinatra::Base
       Thread.current[:isucon5_redis] ||= Redis.new(config[:redis])
     end
 
-    def cache(key, &block)
+    def cache(key, force: false, &block)
       key = "isucon5-#{key}"
-      ret = redis.get(key)
-      ret && ret.to_s.size > 0 ?  ret = JSON.parse(ret, symbolize_names: true) : ret = nil
 
-      ret ||= begin
-                val = block.call
-                redis.set(key, JSON.dump(val)) unless val.nil?
-                val
-              end
+      ret = force ? nil : redis.get(key)
+
+      ret = if ret && !ret.empty?
+        JSON.parse(ret, symbolize_names: true)
+      else
+        val = block.call
+        redis.set(key, JSON.dump(val)) unless val.nil?
+        val
+      end
+
       ret
     end
 
@@ -245,6 +248,12 @@ SQL
     )
     def prefectures
       PREFS
+    end
+
+    def comment_count(entry_id, force: false)
+      cache("comment_count/#{entry_id}", force: force) do
+        {c: db.xquery('SELECT COUNT(*) AS c FROM comments WHERE entry_id = ?', entry_id).first[:c]}
+      end[:c]
     end
   end
 
@@ -418,6 +427,7 @@ SQL
     end
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
     db.xquery(query, entry[:id], current_user[:id], params['comment'])
+    comment_count(entry[:id], force: true)
     redirect "/diary/entry/#{entry[:id]}"
   end
 

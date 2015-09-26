@@ -33,7 +33,7 @@
     </div>
     <% if entry[:is_private] %><div class="text-danger entry-private">範囲: 友だち限定公開</div><% end %>
     <div class="entry-created-at">更新日時: <%= entry[:created_at] %></div>
-    <div class="entry-comments">コメント: <%= db.xquery('SELECT COUNT(*) AS c FROM comments WHERE entry_id = ?', entry[:id]).first[:c] %>件</div>
+    <div class="entry-comments">コメント: <%= comment_count(entry[:id]) %>件</div>
   </div>
   <% end %>
 </div>
