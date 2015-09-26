@@ -194,6 +194,51 @@ SQL
       if user_id != current_user[:id]
         query = 'INSERT INTO footprints (user_id,owner_id) VALUES (?,?)'
         db.xquery(query, user_id, current_user[:id])
+        stamp(user_id)
+      end
+    end
+
+    def stamp(user_id, owner_id: nil, at: nil)
+      owner_id ||= current_user[:id]
+
+      return if owner_id.nil? || user_id == owner_id
+
+      initialize_footprints(user_id)
+
+      redis.zadd("isucon5-footprints/#{user_id}", (at || Time.now).to_i, owner_id)
+    end
+
+    def footprints_by(user_id, count = 50)
+      initialize_footprints(user_id)
+
+      fps = redis.zrevrange("isucon5-footprints/#{user_id}", 0, count, with_scores: true)
+      fps.map do |fp|
+        {
+          owner_id: fp[0].to_i,
+          updated: Time.at(fp[1])
+        }.merge(get_user(fp[0].to_i))
+      end
+    end
+
+    def initialize_footprints(user_id)
+      return if @initialized_footprints || redis.get("isucon5-init/footprints/#{user_id}")
+      @initialized_footprints = true
+      redis.set("isucon5-init/footprints/#{user_id}", "1")
+
+      query = <<-SQL
+        SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) as updated
+        FROM footprints
+        WHERE user_id = ?
+        GROUP BY user_id, owner_id, DATE(created_at)
+        ORDER BY updated DESC
+        LIMIT 50
+      SQL
+
+      footprints = db.xquery(query, user_id)
+      redis.multi do
+        footprints.each do |fp|
+          stamp(fp[:user_id], owner_id: fp[:owner_id], at: fp[:updated])
+        end
       end
     end
 
@@ -274,15 +319,7 @@ SQL
       break if comments_of_friends.size >= 10
     end
 
-    query = <<SQL
-SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
-FROM footprints
-WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
-ORDER BY updated DESC
-LIMIT 10
-SQL
-    footprints = db.xquery(query, current_user[:id])
+    footprints = footprints_by(current_user[:id], 10)
 
     locals = {
       profile: profile || {},
@@ -390,15 +427,8 @@ SQL
 
   get '/footprints' do
     authenticated!
-    query = <<SQL
-SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) as updated
-FROM footprints
-WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
-ORDER BY updated DESC
-LIMIT 50
-SQL
-    footprints = db.xquery(query, current_user[:id])
+
+    footprints = footprints_by(current_user[:id], 50)
     erb :footprints, locals: { footprints: footprints }
   end
 
