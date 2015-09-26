@@ -106,7 +106,7 @@ class Isucon5::WebApp < Sinatra::Base
 
       ret ||= begin
                 val = block.call
-                redis.set(key, JSON.dump(val))
+                redis.set(key, JSON.dump(val)) unless val.nil?
                 val
               end
       ret
@@ -152,13 +152,19 @@ SQL
     end
 
     def get_user(user_id)
-      user = db.xquery('SELECT * FROM users WHERE id = ?', user_id).first
+      user = cache("user/id/#{user_id}") do
+        db.xquery('SELECT * FROM users WHERE id = ?', user_id).first
+      end
+
       raise Isucon5::ContentNotFound unless user
       user
     end
 
     def user_from_account(account_name)
-      user = db.xquery('SELECT * FROM users WHERE account_name = ?', account_name).first
+      user = cache("user/account_name/#{account_name}") do
+        db.xquery('SELECT * FROM users WHERE account_name = ?', account_name).first
+      end
+
       raise Isucon5::ContentNotFound unless user
       user
     end
