@@ -191,11 +191,7 @@ SQL
     end
 
     def mark_footprint(user_id)
-      if user_id != current_user[:id]
-        query = 'INSERT INTO footprints (user_id,owner_id) VALUES (?,?)'
-        db.xquery(query, user_id, current_user[:id])
-        stamp(user_id)
-      end
+      stamp(user_id)
     end
 
     def stamp(user_id, owner_id: nil, at: nil)
