@@ -437,6 +437,9 @@ SQL
   end
 
   get '/initialize' do
+    redis.keys('isucon5-*').each_slice(100) do |ks|
+      redis.del(*ks)
+    end
     db.query("DELETE FROM relations WHERE id > 500000")
     db.query("DELETE FROM footprints WHERE id > 500000")
     db.query("DELETE FROM entries WHERE id > 500000")
