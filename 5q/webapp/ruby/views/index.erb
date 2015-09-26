@@ -19,7 +19,7 @@
     <div id="entries">
       <ul class="list-group">
         <% entries.each do |entry| %>
-        <li class="list-group-item entries-entry"><a href="/diary/entry/<%= entry[:id] %>"><%= entry[:body].split(/\n/).first %></a></li>
+        <li class="list-group-item entries-entry"><a href="/diary/entry/<%= entry[:id] %>"><%= entry[:title] %></a></li>
         <% end %>
       </ul>
     </div>
@@ -63,7 +63,7 @@
       <ul class="list-group">
         <% entry_owner = get_user(entry[:user_id]) %>
         <li class="list-group-item entry-owner"><a href="/diary/entries/<%= entry_owner[:account_name] %>"><%= entry_owner[:nick_name] %>さん</a>:
-        <li class="list-group-item entry-title"><a href="/diary/entry/<%= entry[:id] %>"><%= entry[:body].split(/\n/).first %></a>
+        <li class="list-group-item entry-title"><a href="/diary/entry/<%= entry[:id] %>"><%= entry[:title] %></a>
         <li class="list-group-item entry-created-at">投稿時刻:<%= entry[:created_at] %>
       </ul>
     </div>
@@ -78,7 +78,7 @@
     <div class="friend-comment">
       <ul class="list-group">
         <% comment_owner = get_user(comment[:user_id]) %>
-        <% entry = db.xquery('SELECT * FROM entries WHERE id=?', comment[:entry_id]).first %>
+        <% entry = comment[:entry] %>
         <% entry_owner = get_user(entry[:user_id]) %>
         <li class="list-group-item comment-from-to">
           <a href="/profile/<%= comment_owner[:account_name] %>"><%= comment_owner[:nick_name] %>さん</a>から
