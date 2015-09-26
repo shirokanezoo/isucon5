@@ -85,11 +85,12 @@ class Isucon5::WebApp < Sinatra::Base
     end
 
     def cache(key, &block)
+      key = "isucon5-#{key}"
       ret = redis.get(key)
-      ret = JSON.parse(ret) if ret && ret.to_s.size > 0
+      ret && ret.to_s.size > 0 ?  ret = JSON.parse(ret) : ret = nil
 
       ret ||= begin
-                val = yield
+                val = block.call
                 redis.set(key, JSON.dump(val))
                 val
               end
