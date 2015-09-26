@@ -218,17 +218,12 @@ SQL
       fps = redis.zrevrange("isucon5-footprints/#{user_id}", 0, count, with_scores: true)
       fps = fps.map do |fp|
         date, user_id = fp[0].split(?/,2)
+        user = get_user(user_id)
         {
           owner_id: user_id.to_i,
-          updated: Time.at(fp[1])
+          updated: Time.at(fp[1]),
+          account_name: user[:account_name], nick_name: user[:nick_name]
         }
-      end
-
-      users = Hash[db.xquery('SELECT * FROM users WHERE id IN (?)', fps.map { |_| _[:owner_id] }).map { |row| [row[:id], row] }]
-
-      fps.map do |fp|
-        user = users[fp[:owner_id]]
-        fp.merge(account_name: user[:account_name], nick_name: user[:nick_name])
       end
     end
 
