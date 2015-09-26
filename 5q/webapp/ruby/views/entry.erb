@@ -2,7 +2,7 @@
 <div class="row panel panel-primary" id="entry-entry">
   <div class="entry-title">タイトル: <a href="/diary/entry/<%= entry[:id] %>"><%= entry[:title] %></a></div>
   <div class="entry-content">
-    <% entry[:content].split(/\n/).each do |line| %>
+    <% entry[:body].split(/\n/).each do |line| %>
     <%= line %><br />
     <% end %>
   </div>

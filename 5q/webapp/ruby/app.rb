@@ -242,9 +242,9 @@ SQL
 
     profile = db.xquery('SELECT * FROM profiles WHERE user_id = ?', current_user[:id]).first
 
-    entries_query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5'
+    entries_query = 'SELECT id,user_id,private,title,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5'
     entries = db.xquery(entries_query, current_user[:id])
-      .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry[:title], entry[:content] = entry[:body].split(/\n/, 2); entry }
+      .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry }
 
     comments_for_me_query = <<SQL
 SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
@@ -257,30 +257,22 @@ SQL
     comments_for_me = db.xquery(comments_for_me_query, current_user[:id])
 
     entries_of_friends = []
-    db.query('SELECT * FROM entries ORDER BY created_at DESC LIMIT 1000').each do |entry|
-      next unless is_friend?(entry[:user_id])
-      entry[:title] = entry[:body].split(/\n/).first
+    db.query('SELECT id,user_id,private,title,created_at FROM entries ORDER BY created_at DESC LIMIT 1000').each do |entry|
+      next unless is_friend?(entry[:user_id]) # TODO
       entries_of_friends << entry
       break if entries_of_friends.size >= 10
     end
 
     comments_of_friends = []
-    db.query('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000').each do |comment|
+    db.query('SELECT comments.*, entries.private AS entry_private, entries.user_id AS entry_user_id FROM comments LEFT JOIN entries ON comments.entry_id = entries.id ORDER BY comments.created_at DESC LIMIT 1000').each do |comment|
       next unless is_friend?(comment[:user_id])
-      entry = db.xquery('SELECT * FROM entries WHERE id = ?', comment[:entry_id]).first
-      entry[:is_private] = (entry[:private] == 1)
+      entry = {user_id: comment[:entry_user_id]}
+      entry[:is_private] = (comment[:entry_private] == 1)
+      comment[:entry] = entry
       next if entry[:is_private] && !permitted?(entry[:user_id])
       comments_of_friends << comment
       break if comments_of_friends.size >= 10
     end
-
-    friends_query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC'
-    friends_map = {}
-    db.xquery(friends_query, current_user[:id], current_user[:id]).each do |rel|
-      key = (rel[:one] == current_user[:id] ? :another : :one)
-      friends_map[rel[key]] ||= rel[:created_at]
-    end
-    friends = friends_map.map{|user_id, created_at| [user_id, created_at]}
 
     query = <<SQL
 SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
@@ -298,7 +290,7 @@ SQL
       comments_for_me: comments_for_me,
       entries_of_friends: entries_of_friends,
       comments_of_friends: comments_of_friends,
-      friends: friends,
+      friends: current_friends,
       footprints: footprints
     }
     erb :index, locals: locals
@@ -315,7 +307,7 @@ SQL
               'SELECT * FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5'
             end
     entries = db.xquery(query, owner[:id])
-      .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry[:title], entry[:content] = entry[:body].split(/\n/, 2); entry }
+      .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry }
     mark_footprint(owner[:id])
     erb :profile, locals: { owner: owner, profile: prof, entries: entries, private: permitted?(owner[:id]) }
   end
@@ -354,7 +346,7 @@ SQL
               'SELECT * FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20'
             end
     entries = db.xquery(query, owner[:id])
-      .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry[:title], entry[:content] = entry[:body].split(/\n/, 2); entry }
+      .map{ |entry| entry[:is_private] = (entry[:private] == 1);  entry }
     mark_footprint(owner[:id])
     erb :entries, locals: { owner: owner, entries: entries, myself: (current_user[:id] == owner[:id]) }
   end
@@ -363,7 +355,6 @@ SQL
     authenticated!
     entry = db.xquery('SELECT * FROM entries WHERE id = ?', params['entry_id']).first
     raise Isucon5::ContentNotFound unless entry
-    entry[:title], entry[:content] = entry[:body].split(/\n/, 2)
     entry[:is_private] = (entry[:private] == 1)
     owner = get_user(entry[:user_id])
     if entry[:is_private] && !permitted?(owner[:id])
