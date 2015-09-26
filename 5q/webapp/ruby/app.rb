@@ -179,12 +179,15 @@ SQL
         user_id = session[:user_id]
         query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ?'
         rows = db.xquery(query, user_id, user_id)
-        Hash[rows.map { |_| [_[:one] == user_id ? _[:another] : _[:one], _[:created_at]] }]
+
+        h = {}
+        rows.each { |_| h[_[:one] == user_id ? _[:another] : _[:one]] = _[:created_at] }
+        h
       end
     end
 
     def is_friend?(another_id)
-      !!current_friends[another_id]
+      current_friends[another_id]
     end
 
     def is_friend_account?(account_name)
