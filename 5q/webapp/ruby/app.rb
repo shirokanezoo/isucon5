@@ -217,8 +217,7 @@ SQL
     end
 
     def initialize_footprints(user_id)
-      return if @initialized_footprints || redis.get("isucon5-init/footprints/#{user_id}")
-      @initialized_footprints = true
+      return if redis.get("isucon5-init/footprints/#{user_id}")
       redis.set("isucon5-init/footprints/#{user_id}", "1")
 
       query = <<-SQL
