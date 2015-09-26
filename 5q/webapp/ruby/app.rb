@@ -177,11 +177,11 @@ SQL
     def current_friends
       @current_friends ||= begin
         user_id = session[:user_id]
-        query = 'SELECT one, another, created_at FROM relations WHERE one = ?'
+        query = 'SELECT another, created_at FROM relations WHERE one = ?'
         rows = db.xquery(query, user_id)
 
         h = {}
-        rows.each { |_| h[_[:one] == user_id ? _[:another] : _[:one]] = _[:created_at] }
+        rows.each { |r| h[r[:another]] = r[:created_at] }
         h
       end
     end
