@@ -190,6 +190,10 @@ SQL
       current_friends[another_id]
     end
 
+    def is_friend_nocache?(user_id)
+      db.xquery('SELECT COUNT(1) AS c FROM relations WHERE one = ? AND another = ?', session[:user_id], user_id).first[:c] > 0
+    end
+
     def is_friend_account?(account_name)
       is_friend?(user_from_account(account_name)[:id])
     end
@@ -441,10 +445,7 @@ SQL
     end
     entry[:is_private] = (entry[:private] == 1)
 
-    is_friend = -> {
-      db.xquery('SELECT COUNT(1) AS c FROM relations WHERE one = ? AND another = ?', current_user[:id], entry[:user_id]).first[:c] > 0
-    }
-    if entry[:is_private] && !(entry[:user_id] == current_user[:id] || is_friend[])
+    if entry[:is_private] && !(entry[:user_id] == current_user[:id] || is_friend_nocache?(entry[:user_id]))
       raise Isucon5::PermissionDenied
     end
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
