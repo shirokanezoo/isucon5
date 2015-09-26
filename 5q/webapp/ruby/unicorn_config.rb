@@ -1,6 +1,6 @@
 require 'logger'
 
-worker_processes 4
+worker_processes 12
 preload_app true
 listen 8080
 listen "/tmp/unicorn.sock", :backlog => 2048
