@@ -432,7 +432,7 @@ SQL
 
   post '/diary/comment/:entry_id' do
     authenticated!
-    entry = db.xquery('SELECT * FROM entries WHERE id = ?', params['entry_id']).first
+    entry = db.xquery('SELECT id,private,user_id FROM entries WHERE id = ?', params['entry_id']).first
     unless entry
       raise Isucon5::ContentNotFound
     end
