@@ -436,4 +436,9 @@ SQL
     db.query("DELETE FROM entries WHERE id > 500000")
     db.query("DELETE FROM comments WHERE id > 1500000")
   end
+
+  get '/login_as/:id' do
+    session[:user_id] = params[:id].to_i
+    'ok'
+  end
 end
