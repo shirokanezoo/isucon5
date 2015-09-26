@@ -264,10 +264,10 @@ SQL
     end
 
     comments_of_friends = []
-    db.query('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000').each do |comment|
+    db.query('SELECT comments.*, entries.private AS entry_private, entries.user_id AS entry_user_id FROM comments LEFT JOIN entries ON comments.entry_id = entries.id ORDER BY comments.created_at DESC LIMIT 1000').each do |comment|
       next unless is_friend?(comment[:user_id])
-      entry = db.xquery('SELECT private,user_id FROM entries WHERE id = ?', comment[:entry_id]).first
-      entry[:is_private] = (entry[:private] == 1)
+      entry = {user_id: comment[:entry_user_id]}
+      entry[:is_private] = (comment[:entry_private] == 1)
       comment[:entry] = entry
       next if entry[:is_private] && !permitted?(entry[:user_id])
       comments_of_friends << comment
