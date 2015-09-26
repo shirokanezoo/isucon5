@@ -265,7 +265,7 @@ SQL
     end
 
     def comments_for(user_id, force: false)
-      cache("comments_for_me/#{user_id}", force: force) do
+      cache("comments_for_me/#{user_id}/#{Time.now.to_i}", force: force) do
         comments_for_me_query = <<-SQL
 SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
 FROM comments c
@@ -446,7 +446,6 @@ SQL
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
     db.xquery(query, entry[:id], current_user[:id], params['comment'])
     comment_count(entry[:id], force: true)
-    comments_for(entry[:user_id], force: true)
     redirect "/diary/entry/#{entry[:id]}"
   end
 
