@@ -11,7 +11,14 @@ module MysqlMonkeyPatch
     s = Time.now
     r = super
     e = Time.now
-    puts "type:mysql\tmode:xquery\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}"
+
+    c0 = caller_locations[0]
+    c1 = caller_locations[1]
+
+    cstr0 = "#{File.basename(c0.path)}:#{c0.lineno}:#{c0.label}" if c0
+    cstr1 = "#{File.basename(c1.path)}:#{c1.lineno}:#{c1.label}" if c1
+
+    puts "type:mysql\tmode:xquery\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}\tcaller0:#{cstr0}\tcaller1:#{cstr1}"
     r
   end
 
@@ -19,7 +26,15 @@ module MysqlMonkeyPatch
     s = Time.now
     r = super
     e = Time.now
-    puts "type:mysql\tmode:query\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}"
+
+    c0 = caller_locations[0]
+    return r if c0.label == 'xquery'.freeze
+
+    c1 = caller_locations[1]
+    cstr0 = "#{File.basename(c0.path)}:#{c0.lineno}:#{c0.label}" if c0
+    cstr1 = "#{File.basename(c1.path)}:#{c1.lineno}:#{c1.label}" if c1
+
+    puts "type:mysql\tmode:query\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}\tcaller0:#{cstr0}\tcaller1:#{cstr1}"
     r
   end
 
