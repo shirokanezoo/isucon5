@@ -13,7 +13,7 @@ before_fork do |server, worker|
   #  ActiveRecord::Base.connection_handler.connection_pools.map  {|name, pool| pool.connections }.flatten.each { |c| c.disconnect! }
   #end
 
-  old_pid_path = "#{config[:pid_path]}.oldbin"
+  old_pid_path = "/home/isucon/webapp/ruby/unicorn.pid.oldbin"
   if File.exists?(old_pid_path) && server.pid != old_pid_path
     begin
       Process.kill("QUIT", File.read(old_pid_path).to_i)
