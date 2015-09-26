@@ -89,7 +89,7 @@ class Isucon5::WebApp < Sinatra::Base
         reconnect: true,
       )
       client.query_options.merge!(symbolize_keys: true)
-      client.extend(MysqlMonkeyPatch)
+      client.extend(MysqlMonkeyPatch) unless ENV['ISUCON5_DISABLE_LOGS'] == '1'
 
       Thread.current[:isucon5_db] = client
       client
