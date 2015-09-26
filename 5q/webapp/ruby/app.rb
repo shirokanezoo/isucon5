@@ -420,7 +420,7 @@ SQL
     raise Isucon5::ContentNotFound unless entry
     entry[:is_private] = (entry[:private] == 1)
     owner = get_user(entry[:user_id])
-    if entry[:is_private] && !permitted?(owner[:id])
+    if entry[:is_private] && !(owner[:id] == current_user[:id] || is_friend_nocache?(owner[:id]))
       raise Isucon5::PermissionDenied
     end
     comments = db.xquery('SELECT * FROM comments WHERE entry_id = ?', entry[:id])
