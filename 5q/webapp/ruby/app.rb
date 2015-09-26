@@ -117,10 +117,11 @@ SQL
       unless session[:user_id]
         return nil
       end
+
       @user = cache(session[:user_id]) do
         db.xquery('SELECT id, account_name, nick_name, email FROM users WHERE id=?', session[:user_id]).first
       end
-      p @user
+
       unless @user
         session[:user_id] = nil
         session.clear
