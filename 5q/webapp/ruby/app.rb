@@ -260,6 +260,22 @@ SQL
         {c: db.xquery('SELECT COUNT(*) AS c FROM comments WHERE entry_id = ?', entry_id).first[:c]}
       end[:c]
     end
+
+    def comments_for(user_id, force: false)
+      cache("comments_for_me/#{user_id}", force: force) do
+        comments_for_me_query = <<-SQL
+SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
+FROM comments c
+JOIN entries e ON c.entry_id = e.id
+WHERE e.user_id = ?
+ORDER BY c.created_at DESC
+LIMIT 10
+        SQL
+        db.xquery(comments_for_me_query, user_id).map do |row|
+          row.to_hash
+        end
+      end
+    end
   end
 
   error Isucon5::AuthenticationError do
@@ -300,15 +316,7 @@ SQL
     entries = db.xquery(entries_query, current_user[:id])
       .map{ |entry| entry[:is_private] = (entry[:private] == 1); entry }
 
-    comments_for_me_query = <<SQL
-SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
-FROM comments c
-JOIN entries e ON c.entry_id = e.id
-WHERE e.user_id = ?
-ORDER BY c.created_at DESC
-LIMIT 10
-SQL
-    comments_for_me = db.xquery(comments_for_me_query, current_user[:id])
+    comments_for_me = comments_for(current_user[:id])
 
     entries_of_friends = []
     db.xquery('SELECT id,user_id,private,title,created_at FROM entries WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 10', current_friends.keys).each do |entry|
@@ -435,6 +443,7 @@ SQL
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
     db.xquery(query, entry[:id], current_user[:id], params['comment'])
     comment_count(entry[:id], force: true)
+    comments_for(entry[:user_id], force: true)
     redirect "/diary/entry/#{entry[:id]}"
   end
 
