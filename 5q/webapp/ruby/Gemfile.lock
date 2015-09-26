@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     erubis (2.7.0)
+    gctools (0.2.3)
     kgio (2.10.0)
     mysql2 (0.4.0)
     mysql2-cs-bind (0.0.6)
@@ -27,6 +28,7 @@ PLATFORMS
 
 DEPENDENCIES
   erubis
+  gctools
   mysql2
   mysql2-cs-bind
   redis
