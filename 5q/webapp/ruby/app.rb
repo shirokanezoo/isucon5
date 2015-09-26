@@ -175,7 +175,7 @@ SQL
     def current_friends
       @current_friends ||= begin
         user_id = session[:user_id]
-        query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC'
+        query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ?'
         rows = db.xquery(query, user_id, user_id)
         Hash[rows.map { |_| [_[:one] == user_id ? _[:another] : _[:one], _[:created_at]] }]
       end
@@ -443,7 +443,7 @@ SQL
 
     users = db.query("SELECT id,account_name,nick_name FROM users WHERE id IN (#{current_friends.keys.map(&:to_i).join(?,)})")
     users = Hash[users.map { |row| [row[:id], row] }]
-    erb :friends, locals: { friends: current_friends, users: users }
+    erb :friends, locals: { friends: current_friends.sort_by { |(k,v)| (v || Time.at(0)) }.reverse, users: users }
   end
 
   post '/friends/:account_name' do
