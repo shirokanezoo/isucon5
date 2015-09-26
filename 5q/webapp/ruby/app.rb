@@ -4,6 +4,25 @@ require 'mysql2-cs-bind'
 require 'tilt/erubis'
 require 'erubis'
 
+module MysqlMonkeyPatch
+  def xquery(query, *args)
+    s = Time.now
+    r = super
+    e = Time.now
+    puts "type:mysql\tmode:xquery\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}"
+    r
+  end
+
+  def query(query, *args)
+    s = Time.now
+    r = super
+    e = Time.now
+    puts "type:mysql\tmode:query\tms:#{(e-s) * 1000}\tquery:#{query}\targs:#{args.inspect}"
+    r
+  end
+
+end
+
 module Isucon5
   class AuthenticationError < StandardError; end
   class PermissionDenied < StandardError; end
@@ -48,6 +67,8 @@ class Isucon5::WebApp < Sinatra::Base
         reconnect: true,
       )
       client.query_options.merge!(symbolize_keys: true)
+      client.extend(MysqlMonkeyPatch)
+
       Thread.current[:isucon5_db] = client
       client
     end
