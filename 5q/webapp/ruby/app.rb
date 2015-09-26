@@ -99,7 +99,7 @@ class Isucon5::WebApp < Sinatra::Base
       Thread.current[:isucon5_redis] ||= Redis.new(config[:redis])
     end
 
-    def cache(key, force: false, &block)
+    def cache(key, force: false, expires: nil, &block)
       key = "isucon5-#{key}"
 
       ret = force ? nil : redis.get(key)
@@ -108,7 +108,10 @@ class Isucon5::WebApp < Sinatra::Base
         JSON.parse(ret, symbolize_names: true)
       else
         val = block.call
-        redis.set(key, JSON.dump(val)) unless val.nil?
+        unless val.nil?
+          redis.set(key, JSON.dump(val))
+          redis.expire(key, expires) if expires
+        end
         val
       end
 
@@ -311,15 +314,18 @@ SQL
       break if entries_of_friends.size >= 10
     end
 
-    comments_of_friends = []
-    db.query('SELECT comments.*, entries.private AS entry_private, entries.user_id AS entry_user_id FROM comments LEFT JOIN entries ON comments.entry_id = entries.id ORDER BY comments.created_at DESC LIMIT 1000').each do |comment|
-      next unless is_friend?(comment[:user_id])
-      entry = {user_id: comment[:entry_user_id]}
-      entry[:is_private] = (comment[:entry_private] == 1)
-      comment[:entry] = entry
-      next if entry[:is_private] && !permitted?(entry[:user_id])
-      comments_of_friends << comment
-      break if comments_of_friends.size >= 10
+    cached_comments_of_friends = cache("comments/of/friends/#{current_user[:id]}/#{Time.now.to_i}", expires: 1) do
+      comments_of_friends = []
+      db.query('SELECT comments.*, entries.private AS entry_private, entries.user_id AS entry_user_id FROM comments LEFT JOIN entries ON comments.entry_id = entries.id ORDER BY comments.created_at DESC LIMIT 1000').each do |comment|
+        next unless is_friend?(comment[:user_id])
+        entry = {user_id: comment[:entry_user_id]}
+        entry[:is_private] = (comment[:entry_private] == 1)
+        comment[:entry] = entry
+        next if entry[:is_private] && !permitted?(entry[:user_id])
+        comments_of_friends << comment
+        break if comments_of_friends.size >= 10
+      end
+      comments_of_friends
     end
 
     footprints = footprints_by(current_user[:id], 10)
@@ -329,7 +335,7 @@ SQL
       entries: entries,
       comments_for_me: comments_for_me,
       entries_of_friends: entries_of_friends,
-      comments_of_friends: comments_of_friends,
+      comments_of_friends: cached_comments_of_friends,
       friends: current_friends,
       footprints: footprints
     }
