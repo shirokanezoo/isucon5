@@ -202,14 +202,14 @@ SQL
       stamp(user_id)
     end
 
-    def stamp(user_id, owner_id: nil, at: nil)
+    def stamp(user_id, owner_id: nil, at: Time.now)
       owner_id ||= current_user[:id]
 
       return if owner_id.nil? || user_id == owner_id
 
       initialize_footprints(user_id)
 
-      redis.zadd("isucon5-footprints/#{user_id}", (at || Time.now).to_i, owner_id)
+      redis.zadd("isucon5-footprints/#{user_id}", at.to_i, "#{at.strftime("%F")}/#{owner_id}")
     end
 
     def footprints_by(user_id, count = 50)
@@ -217,8 +217,9 @@ SQL
 
       fps = redis.zrevrange("isucon5-footprints/#{user_id}", 0, count, with_scores: true)
       fps.map do |fp|
+        date, user_id = fp[0].split(?/,2)
         {
-          owner_id: fp[0].to_i,
+          owner_id: user_id.to_i,
           updated: Time.at(fp[1])
         }.merge(get_user(fp[0].to_i))
       end
