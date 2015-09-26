@@ -148,11 +148,17 @@ SQL
       user
     end
 
+    def current_friends
+      @current_friends ||= begin
+        user_id = session[:user_id]
+        query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ?'
+        rows = db.xquery(query, user_id, user_id)
+        Hash[rows.map { |_| [_[:one] == user_id ? _[:another] : _[:one], _[:created_at]] }]
+      end
+    end
+
     def is_friend?(another_id)
-      user_id = session[:user_id]
-      query = 'SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)'
-      cnt = db.xquery(query, user_id, another_id, another_id, user_id).first[:cnt]
-      cnt.to_i > 0 ? true : false
+      !!current_friends[another_id]
     end
 
     def is_friend_account?(account_name)
@@ -404,6 +410,7 @@ SQL
         raise Isucon5::ContentNotFound
       end
       db.xquery('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', current_user[:id], user[:id], user[:id], current_user[:id])
+      current_friends[user[:id]] = Time.now
       redirect '/friends'
     end
   end
