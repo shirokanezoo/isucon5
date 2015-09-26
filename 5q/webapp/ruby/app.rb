@@ -177,7 +177,7 @@ SQL
     def current_friends
       @current_friends ||= begin
         user_id = session[:user_id]
-        query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ?'
+        query = 'SELECT one, another, created_at FROM relations WHERE one = ?'
         rows = db.xquery(query, user_id, user_id)
 
         h = {}
@@ -469,7 +469,7 @@ SQL
       unless user
         raise Isucon5::ContentNotFound
       end
-      db.xquery('INSERT INTO relations (one, another) VALUES (?,?)', current_user[:id], user[:id])
+      db.xquery('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', current_user[:id], user[:id], user[:id], current_user[:id])
       current_friends[user[:id]] = Time.now
       redirect '/friends'
     end
