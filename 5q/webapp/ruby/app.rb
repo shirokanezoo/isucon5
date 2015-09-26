@@ -440,14 +440,10 @@ SQL
 
   get '/friends' do
     authenticated!
-    query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC'
-    friends = {}
-    db.xquery(query, current_user[:id], current_user[:id]).each do |rel|
-      key = (rel[:one] == current_user[:id] ? :another : :one)
-      friends[rel[key]] ||= rel[:created_at]
-    end
-    list = friends.map{|user_id, created_at| [user_id, created_at]}
-    erb :friends, locals: { friends: list }
+
+    users = db.query("SELECT * FROM users WHERE id IN (#{current_friends.keys.map(&:to_i).join(?,)})")
+    users = Hash[users.map { |row| [row[:id], row] }]
+    erb :friends, locals: { friends: current_friends, users: users }
   end
 
   post '/friends/:account_name' do
