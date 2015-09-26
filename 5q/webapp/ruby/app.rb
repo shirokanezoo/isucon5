@@ -73,7 +73,7 @@ class Isucon5::WebApp < Sinatra::Base
         redis: {
           host: ENV['ISUCON5_REDIS_HOST'] || 'localhost',
           port: (ENV['ISUCON5_REDIS_PORT'] || 6379).to_i,
-          db: (ENV['ISUCON5_REDIS_DB'] || 1).to_i
+          db: (ENV['ISUCON5_REDIS_DB'] || 0).to_i
         }
       }
     end
