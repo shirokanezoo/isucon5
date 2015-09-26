@@ -1,2 +1,3 @@
 *.swp
-5q/webapp/ruby/unicorn.pid
+unicorn.pid
+dump.sql
