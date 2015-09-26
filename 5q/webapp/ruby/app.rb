@@ -109,8 +109,7 @@ class Isucon5::WebApp < Sinatra::Base
       else
         val = block.call
         unless val.nil?
-          redis.set(key, JSON.dump(val))
-          redis.expire(key, expires) if expires
+          expires ? redis.setex(key, expires, JSON.dump(val)) : redis.set(key, JSON.dump(val))
         end
         val
       end
