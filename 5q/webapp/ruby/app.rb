@@ -440,7 +440,11 @@ SQL
       raise Isucon5::ContentNotFound
     end
     entry[:is_private] = (entry[:private] == 1)
-    if entry[:is_private] && !permitted?(entry[:user_id])
+
+    is_friend = -> {
+      db.xquery('SELECT COUNT(1) AS c FROM relations WHERE one = ? AND another = ?', current_user[:id], entry[:user_id]).first[:c] > 0
+    }
+    if entry[:is_private] && !(entry[:user_id] == current_user[:id] || is_friend[])
       raise Isucon5::PermissionDenied
     end
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
