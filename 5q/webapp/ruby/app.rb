@@ -3,6 +3,8 @@ require 'mysql2'
 require 'mysql2-cs-bind'
 require 'tilt/erubis'
 require 'erubis'
+require 'redis'
+require 'json'
 
 module MysqlMonkeyPatch
   def xquery(query, *args)
@@ -53,6 +55,11 @@ class Isucon5::WebApp < Sinatra::Base
           password: ENV['ISUCON5_DB_PASSWORD'],
           database: ENV['ISUCON5_DB_NAME'] || 'isucon5q',
         },
+        redis: {
+          host: ENV['ISUCON5_REDIS_HOST'] || 'localhost',
+          port: (ENV['ISUCON5_REDIS_PORT'] || 6379).to_i,
+          db: (ENV['ISUCON5_REDIS_DB'] || 1).to_i
+        }
       }
     end
 
@@ -71,6 +78,22 @@ class Isucon5::WebApp < Sinatra::Base
 
       Thread.current[:isucon5_db] = client
       client
+    end
+
+    def redis
+      Thread.current[:isucon5_redis] ||= Redis.new(config[:redis])
+    end
+
+    def cache(key, &block)
+      ret = redis.get(key)
+      ret = JSON.parse(ret) if ret && ret.to_s.size > 0
+
+      ret ||= begin
+                val = yield
+                redis.set(key, JSON.dump(val))
+                val
+              end
+      ret
     end
 
     def authenticate(email, password)
@@ -93,7 +116,9 @@ SQL
       unless session[:user_id]
         return nil
       end
-      @user = db.xquery('SELECT id, account_name, nick_name, email FROM users WHERE id=?', session[:user_id]).first
+      @user = cache(session[:user_id]) do
+        db.xquery('SELECT id, account_name, nick_name, email FROM users WHERE id=?', session[:user_id]).first
+      end
       unless @user
         session[:user_id] = nil
         session.clear
