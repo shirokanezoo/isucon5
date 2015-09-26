@@ -177,7 +177,7 @@ SQL
     def current_friends
       @current_friends ||= begin
         user_id = session[:user_id]
-        query = 'SELECT one, another, created_at FROM relations WHERE one = ? OR another = ?'
+        query = 'SELECT one, another, created_at FROM relations WHERE one = ?'
         rows = db.xquery(query, user_id, user_id)
 
         h = {}
