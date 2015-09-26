@@ -133,7 +133,7 @@ SQL
         return nil
       end
 
-      @user = cache(session[:user_id]) do
+      @user = cache("current/user/#{session[:user_id]}") do
         db.xquery('SELECT id, account_name, nick_name, email FROM users WHERE id=?', session[:user_id]).first
       end
 
