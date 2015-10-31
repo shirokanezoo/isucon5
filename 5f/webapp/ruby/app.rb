@@ -427,7 +427,7 @@ SQL
         Expeditor::Command.new do
           perfectsecs.map do |service, conf|
             endpoint = Isucon5f::Endpoint.get(service)
-            {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
+            {"service" => service, "data" => endpoint.fetch(conf)}
           end
         end
       )
