@@ -14,6 +14,7 @@ require 'redis/connection/hiredis'
 require 'oj'
 require 'oj_mimic_json'
 require 'msgpack'
+require 'time'
 
 # bundle config build.pg --with-pg-config=<path to pg_config>
 # bundle install
@@ -198,7 +199,7 @@ class Isucon5f::Endpoint
       $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{err.inspect}) #{headers.inspect}"
       raise
     end
-    $stderr.puts "logtype:api\tmethod:#{method}\turi:#{call_uri}\treqtime:#{((e-s)*1000).to_i}"
+    $stderr.puts "logtype:api\ttime:#{e.iso8601}\tmethod:#{method}\turi:#{call_uri}\treqtime:#{((e-s)*1000).to_i}"
     JSON.parse(res.body)
   end
 end
