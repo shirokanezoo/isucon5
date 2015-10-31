@@ -410,15 +410,31 @@ SQL
 
     arg = get_subscription(user[:id])
 
+    perfectsecs = []
     data = arg.map do |service, conf|
+      if service == 'perfectsec' || service == 'perfectsec_attacked'
+        perfectsecs << [service, conf]
+        next
+      end
       Expeditor::Command.new do
         endpoint = Isucon5f::Endpoint.get(service)
         {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
       end
+    end.compact
+
+    unless perfectsecs.empty?
+      data.push(
+        Expeditor::Command.new do
+          perfectsecs.map do |service, conf|
+            endpoint = Isucon5f::Endpoint.get(service)
+            {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
+          end
+        end
+      )
     end
 
     data.each(&:start)
-    json data.map(&:get)
+    json data.map(&:get).flatten
   end
 
   get '/spoof' do
