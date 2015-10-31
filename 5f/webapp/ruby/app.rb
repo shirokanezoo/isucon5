@@ -3,10 +3,11 @@ require 'sinatra/contrib'
 require 'pg'
 require 'tilt/erubis'
 require 'erubis'
-require 'json'
 require 'httpclient'
 require 'openssl'
 require 'expeditor'
+require 'oj'
+require 'oj_mimic_json'
 
 # bundle config build.pg --with-pg-config=<path to pg_config>
 # bundle install

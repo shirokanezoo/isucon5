@@ -9,6 +9,6 @@ gem "httpclient"
 
 gem 'redis'
 gem 'stackprof'
-
-
 gem 'expeditor'
+gem 'oj'
+gem 'oj_mimic_json'
