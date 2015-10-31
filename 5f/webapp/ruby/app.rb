@@ -82,7 +82,8 @@ class Isucon5f::Endpoint
   def initialize(name, method, token_type, token_key, uri, mode = :http)
     @name, @method, @token_type, @token_key, @uri, @mode = name, method, token_type, token_key, uri, mode
     @ssl = uri.start_with?('https://')
-    @cachable = @token_type.nil? && @method == 'GET'
+    @cachable = @method == 'GET'
+    @expirable = @token_type.nil?
 
     LIST[@name] = self
   end
@@ -100,7 +101,11 @@ class Isucon5f::Endpoint
       MessagePack.unpack(cached)
     else
       res = fetch(conf)
-      redis.set("api/cache/#{hash}", res.to_msgpack)
+      if @expirable
+        redis.psetex("api/cache/#{hash}", 3000, res.to_msgpack)
+      else
+        redis.set("api/cache/#{hash}", res.to_msgpack)
+      end
       res
     end
   end
