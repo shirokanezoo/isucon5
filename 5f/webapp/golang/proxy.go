@@ -59,11 +59,10 @@ func main() {
 	http2.VerboseLogs = true
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("りくえすときた")
 		_, res := getResponse(r)
 
 		if res == nil {
-			fmt.Println("もうなんもかんもだめ")
+			log.Printf("!!! Request Failed : Can't success request !!!")
 			http.Error(w, "だめです", 500)
 			return
 		}
@@ -71,7 +70,7 @@ func main() {
 
 		bytes, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			fmt.Println("ぼでぃよめなかった")
+			log.Printf("!!! Request Failed : Can't read body !!!")
 			http.Error(w, "だめです", 500)
 			return
 		}
@@ -84,15 +83,10 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		fmt.Println("へっだいれた")
-
 		w.WriteHeader(res.StatusCode)
-		fmt.Println("レスポンスこーどおいた")
-
-		fmt.Println("%s", bytes)
 		w.Write(bytes)
 
-		fmt.Println("おわった")
+		log.Printf("%s : %s", res.Status, req.URL.String())
 	})
 
 	http.ListenAndServe(":9293", nil)
@@ -102,8 +96,8 @@ func getResponse(req *http.Request) (*http.Request, *http.Response) {
 	endpoint := ENDPOINTS[req.URL.Path]
 	req.URL.Host = endpoint
 	req.URL.Scheme = "https"
-	fmt.Printf("%s\n", req.URL.String())
-	fmt.Printf("%s\n", req.Header.Get("X-Perfect-Security-Token"))
+	log.Printf("Request: %s", req.URL.String())
+	log.Printf("Security Token: %s", req.Header.Get("X-Perfect-Security-Token"))
 
 	nreq, err := http.NewRequest("GET", req.URL.String(), nil)
 	if err != nil {
@@ -121,8 +115,6 @@ func getResponse(req *http.Request) (*http.Request, *http.Response) {
 		log.Printf("Request Error: %s", err)
 		return nreq, nil
 	}
-
-	fmt.Println("りくえすとできた")
 
 	return nreq, resp
 }
