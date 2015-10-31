@@ -17,3 +17,5 @@ gem 'msgpack'
 
 gem 'http-2'
 gem 'net-http-persistent'
+
+gem 'puma'

@@ -21,6 +21,7 @@ GEM
     oj (2.13.0)
     oj_mimic_json (1.0.1)
     pg (0.18.3)
+    puma (2.14.0)
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
@@ -62,6 +63,7 @@ DEPENDENCIES
   oj
   oj_mimic_json
   pg
+  puma
   redis
   sinatra
   sinatra-contrib
