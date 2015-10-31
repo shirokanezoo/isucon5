@@ -13,6 +13,8 @@ CREATE TABLE users (
   grade grades
 );
 
+CREATE INDEX idx_email_passhash ON users (email,passhash);
+
 -- CREATE EXTENSION pgcrypto;
 
 CREATE TYPE token_types AS ENUM ('header', 'param');
@@ -29,3 +31,5 @@ CREATE TABLE subscriptions (
   user_id INTEGER REFERENCES users (id) NOT NULL PRIMARY KEY,
   arg TEXT
 );
+
+CREATE INDEX idx_user_id ON subscriptions (user_id);
