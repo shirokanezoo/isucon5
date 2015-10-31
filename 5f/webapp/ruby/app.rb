@@ -1,8 +1,10 @@
+require 'thread'
 require 'sinatra/base'
 require 'sinatra/contrib'
 require 'pg'
 require 'tilt/erubis'
 require 'erubis'
+require 'net/http/persistent'
 require 'httpclient'
 require 'openssl'
 require 'expeditor'
@@ -25,6 +27,51 @@ module Isucon5f
   ::Time.prepend TimeWithoutZone
 end
 
+# module Isucon5f
+#   class ConnectionPool
+#     LIST = {}
+#     SIZE = 12
+# 
+#     def self.for(hostport)
+#       host, port = hostport.split(?:, 2)
+#       LIST[hostport] ||= self.new(host, port.to_i)
+#     end
+# 
+#     def initialize(host, port)
+#       @host, @port = host, port
+#       @count = 0
+#       @lock = Mutex.new
+#       @queue = Queue.new
+#     end
+# 
+#     def take
+#       if @pool.pop
+#       end
+#     end
+# 
+#     def back(conn)
+#       @queue.push 
+#     end
+# 
+#     def create
+#       @lock.synchronize do
+#         return nil if @count >= SIZE
+#         @count += 1
+# 
+#         Net::HTTP::e
+# 
+#       end
+#     end
+# 
+#     def use
+#       conn = take()
+#       yield conn
+#     ensure
+#       add conn if conn
+#     end
+#   end
+# end
+
 class Isucon5f::Endpoint
   LIST = {}
 
@@ -32,8 +79,8 @@ class Isucon5f::Endpoint
     LIST[name]
   end
 
-  def initialize(name, method, token_type, token_key, uri)
-    @name, @method, @token_type, @token_key, @uri = name, method, token_type, token_key, uri
+  def initialize(name, method, token_type, token_key, uri, mode = :http)
+    @name, @method, @token_type, @token_key, @uri, @mode = name, method, token_type, token_key, uri, mode
     @ssl = uri.start_with?('https://')
 
     LIST[@name] = self
@@ -49,19 +96,81 @@ class Isucon5f::Endpoint
     end
     call_uri = sprintf(uri, *conf['keys'])
 
-    client = HTTPClient.new
-    if @ssl
-      client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    end
-    fetcher = case method
-              when 'GET' then client.method(:get_content)
-              when 'POST' then client.method(:post_content)
-              else
-                raise "unknown method #{method}"
-              end
-    res = fetcher.call(call_uri, params, headers)
 
-    JSON.parse(res)
+    case @mode
+    when :http
+      fetch_http headers, params, call_uri, conf
+    when :http2
+      fetch_http2 headers, params, call_uri, conf
+    end
+  end
+
+  def fetch_http2(headers, params, call_uri, conf)
+    @h2 ||= HTTP2::Client.new
+    @conn ||= begin
+                conn_stop_r, @conn_stop = IO.pipe
+                tcp = TCPSocket.new(uri.host, uri.port)
+                ctx = OpenSSL::SSL::SSLContext.new
+                ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+                ctx.npn_protocols = %w(h2)
+                ctx.npn_select_cb = lambda do |protocols|
+                  'h2'.freeze
+                end
+
+                sock = OpenSSL::SSL::SSLSocket.new(tcp, ctx)
+                sock.sync_close = true
+                sock.hostname = uri.hostname
+                sock.connect
+
+                Thread.new do
+                  loop do
+                    rs, _, _ = IO.select([conn_stop_r, sock])
+                    break if sock.closed? || sock.eof?
+                    if rs.include?(sock)
+                      data = sock.read_nonblock(1024)
+                      # puts "Received bytes: #{data.unpack("H*").first}"
+
+                      begin
+                        @h2 << data
+                      rescue => e
+                        warn "Exception: #{e}, #{e.message} - closing socket."
+                        sock.close
+                      end
+                    end
+
+                    break if sock.closed? || sock.eof?
+                    break if rs.include?(conn_stop_r)
+                  end
+                end.abort_on_exception = true
+
+                sock
+              end
+  end
+
+  def fetch_http(headers, params, call_uri, conf)
+    @client ||= Net::HTTP::Persistent.new(self.__id__.to_s).tap do |cl|
+      cl.verify_mode  = OpenSSL::SSL::VERIFY_NONE
+    end
+
+    call_uri = URI(call_uri)
+    call_uri.query = URI.encode_www_form(params)
+
+    req = case method
+    when 'GET'
+      Net::HTTP::Get.new(call_uri.request_uri, headers)
+    when 'POST'
+      Net::HTTP::Post.new(call_uri.request_uri, headers)
+    else
+      raise "unknown method #{method}"
+    end
+
+    s = Time.now
+    res = @client.request(call_uri, req)
+    res.value
+    e = Time.now
+    $stderr.puts "[API CALL][HTTP] #{method} #{call_uri} (#{"%.2f" % (e-s)}s)"
+    JSON.parse(res.body)
   end
 end
 
@@ -273,14 +382,14 @@ SQL
     arg = get_subscription(user[:id])
 
     data = arg.map do |service, conf|
-      #Expeditor::Command.new do
+      Expeditor::Command.new do
         endpoint = Isucon5f::Endpoint.get(service)
         {"service" => service, "data" => endpoint.fetch(conf)}
-      #end
+      end
     end
 
-    #data.each(&:start)
-    json data#.map(&:get)
+    data.each(&:start)
+    json data.map(&:get)
   end
 
   get '/spoof' do

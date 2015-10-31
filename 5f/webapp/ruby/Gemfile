@@ -14,3 +14,6 @@ gem 'oj'
 gem 'oj_mimic_json'
 gem 'hiredis'
 gem 'msgpack'
+
+gem 'http-2'
+gem 'net-http-persistent'
