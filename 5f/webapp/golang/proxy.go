@@ -93,12 +93,29 @@ func main() {
 	http.ListenAndServe(":9293", nil)
 }
 
+var tokensMutex = new(sync.Mutex)
+var tokenLocks = map[string]*sync.Mutex{}
+
 func getResponse(req *http.Request) (*http.Request, *http.Response) {
 	endpoint := ENDPOINTS[req.URL.Path]
 	req.URL.Host = endpoint
 	req.URL.Scheme = "https"
+
+	token := req.Header.Get("X-Perfect-Security-Token")
+
+	tokensMutex.Lock()
+	mx, ok := tokenLocks[token]
+	if !ok {
+		mx = new(sync.Mutex)
+		tokenLocks[token] = mx
+	}
+	tokensMutex.Unlock()
+
+	mx.Lock()
+	defer mx.Unlock()
+
 	log.Printf("Request: %s", req.URL.String())
-	log.Printf("Security Token: %s", req.Header.Get("X-Perfect-Security-Token"))
+	log.Printf("Security Token: %s", token)
 
 	nreq, err := http.NewRequest("GET", req.URL.String(), nil)
 	if err != nil {
