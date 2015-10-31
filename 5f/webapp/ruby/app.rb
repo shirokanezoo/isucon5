@@ -189,13 +189,24 @@ class Isucon5f::Endpoint
       raise "unknown method #{method}"
     end
 
-    s = Time.now
-    res = @client.request(call_uri, req)
-    e = Time.now
+    retried = false
+
 
     begin
+      s = Time.now
+      res = @client.request(call_uri, req)
+      e = Time.now
+
       res.value
     rescue Exception => err
+      e ||= Time.now
+      s ||= Time.now
+      if res && res.code == '429' && !retried
+        retried = true
+        $stderr.puts "[API CALL][HTTP][RETRY] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{err.inspect}) #{headers.inspect}"
+        retry
+        sleep 1
+      end
       $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{err.inspect}) #{headers.inspect}"
       raise
     end
