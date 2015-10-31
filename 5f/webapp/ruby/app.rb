@@ -167,8 +167,14 @@ class Isucon5f::Endpoint
 
     s = Time.now
     res = @client.request(call_uri, req)
-    res.value
     e = Time.now
+
+    begin
+      res.value
+    rescue Exception => e
+      $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{e.inspect})"
+      raise
+    end
     $stderr.puts "[API CALL][HTTP] #{method} #{call_uri} (#{"%.2f" % (e-s)}s)"
     JSON.parse(res.body)
   end
