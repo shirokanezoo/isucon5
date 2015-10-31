@@ -129,10 +129,15 @@ func copyHeaders(dst, src *http.Header) {
 }
 
 var clients = map[string]*http.Client{}
+var client *http.Client
 
 func getClinet(token string) *http.Client {
 	mutex.Lock()
 	defer mutex.Unlock()
+
+	if client != nil {
+		return client
+	}
 
 	cli, ok := clients[token]
 	if ok {
@@ -140,10 +145,9 @@ func getClinet(token string) *http.Client {
 	}
 
 	tr := &httpclient.Transport{
-		MaxIdleConnsPerHost: 1,
+		MaxIdleConnsPerHost: 10,
 		ConnectTimeout:      2 * time.Second,
 		DisableKeepAlives:   false,
-		DisableCompression:  true,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
@@ -168,7 +172,7 @@ func getClinet(token string) *http.Client {
 		}
 	}()
 
-	client := &http.Client{Transport: tr}
+	client = &http.Client{Transport: tr}
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 8 {
 			return errors.New("Too many redirects")
