@@ -6,3 +6,7 @@ gem "pg"
 gem "erubis"
 gem "unicorn"
 gem "httpclient"
+
+gem 'redis'
+gem 'stackprof'
+
