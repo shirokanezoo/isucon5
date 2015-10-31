@@ -1,6 +1,6 @@
 require_relative './app.rb'
 
-unless ENV['ISUCON5_DISABLE_LOGS'] == '1'
+if false#ENV['ISUCON5_DISABLE_LOGS'] == '1'
   require 'stackprof'
   require 'pathname'
   Pathname.new('/tmp/stackprof').mkpath
