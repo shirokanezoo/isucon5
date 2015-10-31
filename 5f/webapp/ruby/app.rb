@@ -19,6 +19,54 @@ module Isucon5f
   ::Time.prepend TimeWithoutZone
 end
 
+class Isucon5f::Endpoint
+  LIST = {}
+
+  def self.get(name)
+    LIST[name]
+  end
+
+  def initialize(name, method, token_type, token_key, uri)
+    @name, @method, @token_type, @token_key, @uri = name, method, token_type, token_key, uri
+    @ssl = uri.start_with?('https://')
+
+    LIST[@name] = self
+  end
+  attr_reader :name, :method, :token_type, :token_key, :uri
+
+  def fetch(conf)
+    headers = {}
+    params = (conf['params'] && conf['params'].dup) || {}
+    case token_type
+    when 'header' then headers[token_key] = conf['token']
+    when 'param' then params[token_key] = conf['token']
+    end
+    call_uri = sprintf(uri, *conf['keys'])
+
+    client = HTTPClient.new
+    if @ssl
+      client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    end
+    fetcher = case method
+              when 'GET' then client.method(:get_content)
+              when 'POST' then client.method(:post_content)
+              else
+                raise "unknown method #{method}"
+              end
+    res = fetcher.call(call_uri, params, headers)
+
+    JSON.parse(res)
+  end
+end
+
+Isucon5f::Endpoint.new('ken', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8080/%s')
+Isucon5f::Endpoint.new('ken2', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8080/')
+Isucon5f::Endpoint.new('surname', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8081/surname')
+Isucon5f::Endpoint.new('givenname', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8081/givenname')
+Isucon5f::Endpoint.new('tenki', 'GET', 'param', 'zipcode', 'http://api.five-final.isucon.net:8988/')
+Isucon5f::Endpoint.new('perfectsec', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/tokens')
+Isucon5f::Endpoint.new('perfectsec_attacked', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/attacked_list')
+
 class Isucon5f::WebApp < Sinatra::Base
   use Rack::Session::Cookie, secret: (ENV['ISUCON5_SESSION_SECRET'] || 'tonymoris')
   set :erb, escape_html: true
@@ -210,16 +258,8 @@ SQL
     data = []
 
     arg.each_pair do |service, conf|
-      row = db.exec_params("SELECT meth, token_type, token_key, uri FROM endpoints WHERE service=$1", [service]).values.first
-      method, token_type, token_key, uri_template = row
-      headers = {}
-      params = (conf['params'] && conf['params'].dup) || {}
-      case token_type
-      when 'header' then headers[token_key] = conf['token']
-      when 'param' then params[token_key] = conf['token']
-      end
-      uri = sprintf(uri_template, *conf['keys'])
-      data << {"service" => service, "data" => fetch_api(method, uri, headers, params)}
+      endpoint = Isucon5f::Endpoint.get(service)
+      data << {"service" => service, "data" => endpoint.fetch(conf)}
     end
 
     json data
