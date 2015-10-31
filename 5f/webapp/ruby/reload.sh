@@ -6,4 +6,4 @@ bundle install --jobs 30
   ruby extconf.rb
   make
 )
-
+kill -USR2 $(cat /home/isucon/webapp/ruby/unicorn.pid)
