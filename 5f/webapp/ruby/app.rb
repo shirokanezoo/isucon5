@@ -210,7 +210,7 @@ class Isucon5f::Endpoint
       $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{err.inspect}) #{headers.inspect}"
       raise
     end
-    $stderr.puts "logtype:api\ttime:#{e.iso8601}\tmethod:#{method}\turi:#{call_uri}\treqtime:#{"%.3f" % (e-s)}"
+    #$stderr.puts "logtype:api\ttime:#{e.iso8601}\tmethod:#{method}\turi:#{call_uri}\treqtime:#{"%.3f" % (e-s)}"
     JSON.parse(res.body)
   end
 end
