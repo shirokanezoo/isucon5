@@ -203,13 +203,15 @@ class Isucon5f::Endpoint
   end
 end
 
+PROXY_HOST = ENV['MY_PROXY_HOST'] || 'localhost'
+
 Isucon5f::Endpoint.new('ken', 'GET', nil, nil, 'http://api.five-final.isucon.net:8080/%s')
 Isucon5f::Endpoint.new('ken2', 'GET', nil, nil, 'http://api.five-final.isucon.net:8080/')
 Isucon5f::Endpoint.new('surname', 'GET', nil, nil, 'http://api.five-final.isucon.net:8081/surname')
 Isucon5f::Endpoint.new('givenname', 'GET', nil, nil, 'http://api.five-final.isucon.net:8081/givenname')
 Isucon5f::Endpoint.new('tenki', 'GET', 'param', 'zipcode', 'http://api.five-final.isucon.net:8988/')
-Isucon5f::Endpoint.new('perfectsec', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/tokens')
-Isucon5f::Endpoint.new('perfectsec_attacked', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/attacked_list')
+Isucon5f::Endpoint.new('perfectsec', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', "http://#{PROXY_HOST}:9293/tokens")
+Isucon5f::Endpoint.new('perfectsec_attacked', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', "http://#{PROXY_HOST}:9293/attacked_list")
 
 class Isucon5f::WebApp < Sinatra::Base
   use Rack::Session::Cookie, secret: (ENV['ISUCON5_SESSION_SECRET'] || 'tonymoris')
