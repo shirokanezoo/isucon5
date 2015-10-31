@@ -415,10 +415,10 @@ SQL
 
     perfectsecs = []
     data = arg.map do |service, conf|
-      if service == 'perfectsec' || service == 'perfectsec_attacked'
-        perfectsecs << [service, conf]
-        next
-      end
+      #if service == 'perfectsec' || service == 'perfectsec_attacked'
+      #  perfectsecs << [service, conf]
+      #  next
+      #end
       Expeditor::Command.new do
         endpoint = Isucon5f::Endpoint.get(service)
         {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
