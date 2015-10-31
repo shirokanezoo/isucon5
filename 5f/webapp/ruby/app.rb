@@ -92,7 +92,7 @@ class Isucon5f::Endpoint
     return fetch(conf) unless @cachable
 
     params = (conf['params'] && conf['params'].dup) || {}
-    hash = Digest::MD5.hexdigest(sprintf(uri, *conf['keys']))
+    hash = Digest::MD5.hexdigest(uri + conf.to_s)
 
     cached = redis.get("api/cache/#{hash}")
 
