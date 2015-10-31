@@ -19,8 +19,8 @@ const (
 
 var (
 	ENDPOINTS = map[string]string{
-		"/tokens":        "https://api.five-final.isucon.net:8443/tokens",
-		"/attacked_list": "https://api.five-final.isucon.net:8443/attacked_list",
+		"/tokens":        "api.five-final.isucon.net:8443",
+		"/attacked_list": "api.five-final.isucon.net:8443",
 	}
 )
 
@@ -100,8 +100,12 @@ func main() {
 
 func getResponse(req *http.Request) (*http.Request, *http.Response) {
 	endpoint := ENDPOINTS[req.URL.Path]
+	req.URL.Host = endpoint
+	req.URL.Scheme = "https"
+	fmt.Printf("%s\n", req.URL.String())
+	fmt.Printf("%s\n", req.Header.Get("X-Perfect-Security-Token"))
 
-	nreq, err := http.NewRequest("GET", endpoint, nil)
+	nreq, err := http.NewRequest("GET", req.URL.String(), nil)
 	if err != nil {
 		log.Printf("%s", err)
 		return nreq, nil
