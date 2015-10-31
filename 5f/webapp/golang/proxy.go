@@ -3,12 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"github.com/bradfitz/http2"
 	httpclient "github.com/mreiferson/go-httpclient"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -55,6 +55,7 @@ var ValidRespHeaders = map[string]bool{
 var mutex *sync.Mutex
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	mutex = new(sync.Mutex)
 	http2.VerboseLogs = true
 
@@ -86,7 +87,7 @@ func main() {
 		w.WriteHeader(res.StatusCode)
 		w.Write(bytes)
 
-		log.Printf("%s : %s", res.Status, req.URL.String())
+		log.Printf("%s : %s", res.Status, r.URL.String())
 	})
 
 	http.ListenAndServe(":9293", nil)
