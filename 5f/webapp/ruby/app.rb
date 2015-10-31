@@ -59,10 +59,10 @@ class Isucon5f::Endpoint
   end
 end
 
-Isucon5f::Endpoint.new('ken', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8080/%s')
-Isucon5f::Endpoint.new('ken2', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8080/')
-Isucon5f::Endpoint.new('surname', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8081/surname')
-Isucon5f::Endpoint.new('givenname', 'GET', NULL, NULL, 'http://api.five-final.isucon.net:8081/givenname')
+Isucon5f::Endpoint.new('ken', 'GET', nil, nil, 'http://api.five-final.isucon.net:8080/%s')
+Isucon5f::Endpoint.new('ken2', 'GET', nil, nil, 'http://api.five-final.isucon.net:8080/')
+Isucon5f::Endpoint.new('surname', 'GET', nil, nil, 'http://api.five-final.isucon.net:8081/surname')
+Isucon5f::Endpoint.new('givenname', 'GET', nil, nil, 'http://api.five-final.isucon.net:8081/givenname')
 Isucon5f::Endpoint.new('tenki', 'GET', 'param', 'zipcode', 'http://api.five-final.isucon.net:8988/')
 Isucon5f::Endpoint.new('perfectsec', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/tokens')
 Isucon5f::Endpoint.new('perfectsec_attacked', 'GET', 'header', 'X-PERFECT-SECURITY-TOKEN', 'https://api.five-final.isucon.net:8443/attacked_list')
