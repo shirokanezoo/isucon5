@@ -6,6 +6,7 @@ require 'erubis'
 require 'json'
 require 'httpclient'
 require 'openssl'
+require 'expeditor'
 
 # bundle config build.pg --with-pg-config=<path to pg_config>
 # bundle install
@@ -255,14 +256,15 @@ SQL
     arg_json = db.exec_params("SELECT arg FROM subscriptions WHERE user_id=$1", [user[:id]]).values.first[0]
     arg = JSON.parse(arg_json)
 
-    data = []
-
-    arg.each_pair do |service, conf|
-      endpoint = Isucon5f::Endpoint.get(service)
-      data << {"service" => service, "data" => endpoint.fetch(conf)}
+    data = arg.map do |service, conf|
+      Expeditor::Command.new do
+        endpoint = Isucon5f::Endpoint.get(service)
+        {"service" => service, "data" => endpoint.fetch(conf)}
+      end
     end
 
-    json data
+    data.each(&:start)
+    json data.map(&:get)
   end
 
   get '/initialize' do

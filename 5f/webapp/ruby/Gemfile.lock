@@ -2,7 +2,15 @@ GEM
   remote: https://rubygems.org/
   specs:
     backports (3.6.6)
+    concurrent-ruby (0.8.0)
+      ref (~> 1.0, >= 1.0.5)
+    concurrent-ruby-ext (0.8.0)
+      concurrent-ruby (~> 0.8.0)
     erubis (2.7.0)
+    expeditor (0.1.1)
+      concurrent-ruby (= 0.8.0)
+      concurrent-ruby-ext (= 0.8.0)
+      retryable (> 1.0)
     httpclient (2.6.0.1)
     kgio (2.10.0)
     multi_json (1.11.2)
@@ -14,6 +22,8 @@ GEM
       rack (>= 1.0)
     raindrops (0.15.0)
     redis (3.2.1)
+    ref (1.0.5)
+    retryable (2.0.1)
     sinatra (1.4.6)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -37,6 +47,7 @@ PLATFORMS
 
 DEPENDENCIES
   erubis
+  expeditor
   httpclient
   pg
   redis
