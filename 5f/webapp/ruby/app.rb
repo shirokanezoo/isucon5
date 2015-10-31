@@ -102,7 +102,7 @@ class Isucon5f::Endpoint
     else
       res = fetch(conf)
       if @expirable
-        redis.psetex("api/cache/#{hash}", 3000, res.to_msgpack)
+        redis.psetex("api/cache/#{hash}", 1500, res.to_msgpack)
       else
         redis.set("api/cache/#{hash}", res.to_msgpack)
       end
@@ -427,7 +427,7 @@ SQL
         Expeditor::Command.new do
           perfectsecs.map do |service, conf|
             endpoint = Isucon5f::Endpoint.get(service)
-            {"service" => service, "data" => endpoint.fetch(conf)}
+            {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
           end
         end
       )
