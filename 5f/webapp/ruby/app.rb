@@ -171,8 +171,8 @@ class Isucon5f::Endpoint
 
     begin
       res.value
-    rescue Exception => e
-      $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{e.inspect})"
+    rescue Exception => err
+      $stderr.puts "[API CALL][HTTP][ERROR] #{method} #{call_uri} (#{"%.2f" % (e-s)}s, #{err.inspect})"
       raise
     end
     $stderr.puts "[API CALL][HTTP] #{method} #{call_uri} (#{"%.2f" % (e-s)}s)"
