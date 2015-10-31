@@ -103,7 +103,7 @@ class Isucon5f::Endpoint
     else
       res = fetch(conf)
       if @expirable
-        redis.psetex("api/cache/#{hash}", 1500, res.to_msgpack)
+        redis.psetex("api/cache/#{hash}", 1200, res.to_msgpack)
       else
         redis.set("api/cache/#{hash}", res.to_msgpack)
       end
