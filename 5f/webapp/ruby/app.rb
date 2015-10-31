@@ -31,38 +31,38 @@ end
 #   class ConnectionPool
 #     LIST = {}
 #     SIZE = 12
-# 
+#
 #     def self.for(hostport)
 #       host, port = hostport.split(?:, 2)
 #       LIST[hostport] ||= self.new(host, port.to_i)
 #     end
-# 
+#
 #     def initialize(host, port)
 #       @host, @port = host, port
 #       @count = 0
 #       @lock = Mutex.new
 #       @queue = Queue.new
 #     end
-# 
+#
 #     def take
 #       if @pool.pop
 #       end
 #     end
-# 
+#
 #     def back(conn)
-#       @queue.push 
+#       @queue.push
 #     end
-# 
+#
 #     def create
 #       @lock.synchronize do
 #         return nil if @count >= SIZE
 #         @count += 1
-# 
+#
 #         Net::HTTP::e
-# 
+#
 #       end
 #     end
-# 
+#
 #     def use
 #       conn = take()
 #       yield conn
@@ -83,7 +83,7 @@ class Isucon5f::Endpoint
     @name, @method, @token_type, @token_key, @uri, @mode = name, method, token_type, token_key, uri, mode
     @ssl = uri.start_with?('https://')
     @cachable = @method == 'GET'
-    @expirable = @token_type.nil?
+    @expirable = !@token_type.nil?
 
     LIST[@name] = self
   end
