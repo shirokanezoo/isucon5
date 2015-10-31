@@ -5,5 +5,6 @@ export _JAVA_OPTIONS="-Dfile.encoding=UTF-8"
 export ISUCON5_DB_HOST=isu12a
 export ISUCON5_DB_PORT=5432
 export REDIS_HOST=isu12a
+export MY_PROXY_HOST=isu12b
 
 exec $*
