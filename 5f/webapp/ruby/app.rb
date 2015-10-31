@@ -121,7 +121,7 @@ class Isucon5f::WebApp < Sinatra::Base
     end
 
     def insert_subscription(user_id)
-      redis.set("subscription/#{user_id}", "{}")
+      redis.set("subscription/#{user_id}", "\x80")
     end
 
     def update_subscription(user_id, params)
