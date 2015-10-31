@@ -2,3 +2,5 @@
 .bundle/
 Makefile
 *.o
+*.pid
+*.oldbin
