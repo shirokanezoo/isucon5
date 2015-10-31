@@ -82,10 +82,28 @@ class Isucon5f::Endpoint
   def initialize(name, method, token_type, token_key, uri, mode = :http)
     @name, @method, @token_type, @token_key, @uri, @mode = name, method, token_type, token_key, uri, mode
     @ssl = uri.start_with?('https://')
+    @cachable = @token_type.nil? && @method == 'GET'
 
     LIST[@name] = self
   end
   attr_reader :name, :method, :token_type, :token_key, :uri
+
+  def fetch_with_cache(conf, redis)
+    return fetch(conf) unless @cachable
+
+    params = (conf['params'] && conf['params'].dup) || {}
+    hash = Digest::MD5.hexdigest(sprintf(uri, *conf['keys']))
+
+    cached = redis.get("api/cache/#{hash}")
+
+    if cached
+      MessagePack.unpack(cached)
+    else
+      res = fetch(conf)
+      redis.set("api/cache/#{hash}", res.to_msgpack)
+      res
+    end
+  end
 
   def fetch(conf)
     headers = {}
@@ -390,7 +408,7 @@ SQL
     data = arg.map do |service, conf|
       Expeditor::Command.new do
         endpoint = Isucon5f::Endpoint.get(service)
-        {"service" => service, "data" => endpoint.fetch(conf)}
+        {"service" => service, "data" => endpoint.fetch_with_cache(conf, redis)}
       end
     end
 
