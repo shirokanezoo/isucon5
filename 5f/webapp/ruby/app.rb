@@ -283,6 +283,12 @@ SQL
     json data#.map(&:get)
   end
 
+  get '/spoof' do
+    session[:user_id] = params[:user_id]
+
+    redirect '/'
+  end
+
   get '/initialize' do
     puts "===> Initialize DB    : #{Time.now.to_s}"
     file = File.expand_path("../../sql/initialize.sql", __FILE__)
