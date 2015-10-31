@@ -257,14 +257,14 @@ SQL
     arg = JSON.parse(arg_json)
 
     data = arg.map do |service, conf|
-      Expeditor::Command.new do
+      #Expeditor::Command.new do
         endpoint = Isucon5f::Endpoint.get(service)
         {"service" => service, "data" => endpoint.fetch(conf)}
-      end
+      #end
     end
 
-    data.each(&:start)
-    json data.map(&:get)
+    #data.each(&:start)
+    json data#.map(&:get)
   end
 
   get '/initialize' do
