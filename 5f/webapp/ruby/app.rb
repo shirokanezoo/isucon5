@@ -6,8 +6,12 @@ require 'erubis'
 require 'httpclient'
 require 'openssl'
 require 'expeditor'
+require 'redis'
+require 'hiredis'
+require 'redis/connection/hiredis'
 require 'oj'
 require 'oj_mimic_json'
+require 'msgpack'
 
 # bundle config build.pg --with-pg-config=<path to pg_config>
 # bundle install
@@ -103,6 +107,31 @@ class Isucon5f::WebApp < Sinatra::Base
       conn
     end
 
+    def redis_host
+      ENV['REDIS_HOST'] || 'localhost'
+    end
+
+    def redis
+      return Thread.current[:redis] if Thread.current[:redis]
+      Thread.current[:redis] = Redis.new(
+        host: redis_host,
+        port: ENV['REDIS_PORT'] || 6379,
+        driver: :hiredis
+      )
+    end
+
+    def insert_subscription(user_id)
+      redis.set("subscription/#{user_id}", "{}")
+    end
+
+    def update_subscription(user_id, params)
+      redis.set("subscription/#{user_id}", params.to_msgpack)
+    end
+
+    def get_subscription(user_id)
+      MessagePack.unpack(redis.get("subscription/#{user_id}") || "\x80")
+    end
+
     def authenticate(email, password)
       query = <<SQL
 SELECT id, email, grade FROM users WHERE email=$1 AND passhash=digest(salt || $2, 'sha512')
@@ -150,13 +179,9 @@ SQL
     insert_user_query = <<SQL
 INSERT INTO users (email,salt,passhash,grade) VALUES ($1,$2,digest($3 || $4, 'sha512'),$5) RETURNING id
 SQL
-    default_arg = {}
-    insert_subscription_query = <<SQL
-INSERT INTO subscriptions (user_id,arg) VALUES ($1,$2)
-SQL
     db.transaction do |conn|
       user_id = conn.exec_params(insert_user_query, [email,salt,salt,password,grade]).values.first.first
-      conn.exec_params(insert_subscription_query, [user_id, default_arg.to_json])
+      insert_subscription(user_id)
     end
     redirect '/login'
   end
@@ -197,10 +222,7 @@ SQL
     user = current_user
     halt 403 unless user
 
-    query = <<SQL
-SELECT arg FROM subscriptions WHERE user_id=$1
-SQL
-    arg = db.exec_params(query, [user[:id]]).values.first[0]
+    arg = get_subscription(user[:id])
     erb :modify, locals: {user: user, arg: arg}
   end
 
@@ -213,15 +235,9 @@ SQL
     keys = params.has_key?("keys") ? params["keys"].strip.split(/\s+/) : nil
     param_name = params.has_key?("param_name") ? params["param_name"].strip : nil
     param_value = params.has_key?("param_value") ? params["param_value"].strip : nil
-    select_query = <<SQL
-SELECT arg FROM subscriptions WHERE user_id=$1 FOR UPDATE
-SQL
-    update_query = <<SQL
-UPDATE subscriptions SET arg=$1 WHERE user_id=$2
-SQL
+
     db.transaction do |conn|
-      arg_json = conn.exec_params(select_query, [user[:id]]).values.first[0]
-      arg = JSON.parse(arg_json)
+      arg = get_subscription(user[:id])
       arg[service] ||= {}
       arg[service]['token'] = token if token
       arg[service]['keys'] = keys if keys
@@ -229,7 +245,7 @@ SQL
         arg[service]['params'] ||= {}
         arg[service]['params'][param_name] = param_value
       end
-      conn.exec_params(update_query, [arg.to_json, user[:id]])
+      update_subscription(user[:id], arg)
     end
     redirect '/modify'
   end
@@ -254,8 +270,7 @@ SQL
       halt 403
     end
 
-    arg_json = db.exec_params("SELECT arg FROM subscriptions WHERE user_id=$1", [user[:id]]).values.first[0]
-    arg = JSON.parse(arg_json)
+    arg = get_subscription(user[:id])
 
     data = arg.map do |service, conf|
       Expeditor::Command.new do
@@ -269,7 +284,23 @@ SQL
   end
 
   get '/initialize' do
+    puts "===> Initialize DB    : #{Time.now.to_s}"
     file = File.expand_path("../../sql/initialize.sql", __FILE__)
     system("psql", "-f", file, "isucon5f")
+
+    puts "===> Initialize Redis : #{Time.now.to_s}"
+    redis.flushall
+
+    result = db.exec_params('SELECT * FROM subscriptions') do |result|
+      result.values
+    end
+
+    redis.pipelined do
+      result.each do |row|
+        update_subscription(row[0], JSON.parse(row[1]))
+      end
+    end
+
+    ""
   end
 end

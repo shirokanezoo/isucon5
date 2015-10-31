@@ -11,8 +11,10 @@ GEM
       concurrent-ruby (= 0.8.0)
       concurrent-ruby-ext (= 0.8.0)
       retryable (> 1.0)
+    hiredis (0.6.0)
     httpclient (2.6.0.1)
     kgio (2.10.0)
+    msgpack (0.7.0)
     multi_json (1.11.2)
     oj (2.13.0)
     oj_mimic_json (1.0.1)
@@ -50,7 +52,9 @@ PLATFORMS
 DEPENDENCIES
   erubis
   expeditor
+  hiredis
   httpclient
+  msgpack
   oj
   oj_mimic_json
   pg
