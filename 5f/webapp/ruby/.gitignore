@@ -1,0 +1,6 @@
+*.bundle
+.bundle/
+Makefile
+*.o
+*.pid
+*.oldbin

@@ -1,0 +1,21 @@
+source "https://rubygems.org"
+
+gem "sinatra"
+gem "sinatra-contrib"
+gem "pg"
+gem "erubis"
+gem "unicorn"
+gem "httpclient"
+
+gem 'redis'
+gem 'stackprof'
+gem 'expeditor'
+gem 'oj'
+gem 'oj_mimic_json'
+gem 'hiredis'
+gem 'msgpack'
+
+gem 'http-2'
+gem 'net-http-persistent'
+
+gem 'puma'
